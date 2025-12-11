@@ -4,14 +4,12 @@
 
 **Live Demo:** https://peiyuliu.shinyapps.io/ontology-cus-pkboin-v1/
 
----
 
 ## Overview
 
 This R Shiny application implements the **Clinical Utility Score (CUS) framework** to facilitate **optimal dose selection for oncology drugs**.  
 By integrating **Exposure-Response (ER)** relationships for both **efficacy** and **safety** endpoints, the app calculates a unified utility score to identify the **optimal therapeutic window**, aligning with the philosophy of the FDA's **Project Optimus**.
 
----
 
 ## Key Features
 
@@ -29,7 +27,7 @@ By integrating **Exposure-Response (ER)** relationships for both **efficacy** an
   - `future` for asynchronous computation  
   - `bindCache` for instant rendering  
 
----
+
 
 ## Methodology
 
@@ -47,7 +45,7 @@ Mapping probabilities to utility scores:
 ### **3. Aggregation**
 Using a **weighted multiplicative model** to derive the final **Clinical Utility Score (CUS)**.
 
----
+
 
 ## References
 
@@ -57,4 +55,4 @@ Cheng Y, Chu S et al. *Exposure-Response–Based Multiattribute Clinical Utility
 Sun, H., & Tu, J. (2025). *PKBOIN-12: A Bayesian optimal interval Phase I/II design incorporating pharmacokinetics outcomes to find the optimal biological dose.*  
 **Pharmaceutical Statistics**, Wiley.
 
----
+
