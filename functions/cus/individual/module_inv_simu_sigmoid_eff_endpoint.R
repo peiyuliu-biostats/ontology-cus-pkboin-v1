@@ -1,0 +1,75 @@
+module_UI_inv_simu_sigmoid_eff_endpoint <- function(id, index, init = NULL) {
+  ns <- NS(id)
+  # initial values come from the store, so a re-inserted block shows the current
+  # value instead of resetting to 0
+  v_w <- if (is.null(init)) 1 else init$weight
+  v_s <- if (is.null(init)) 0 else init$slope
+  v_i <- if (is.null(init)) 0 else init$intercept
+  tagList(
+    h6(paste0("Settings for Efficacy Endpoint ", index, ":")),
+    fluidRow(
+      column(
+        width = 5,
+        sliderInput(ns("eff_weight"), label = 'Weight',
+                    value = v_w, min = 0, max = 10, step = 0.5, width = "100%")
+      ),
+      column(
+        width = 7,
+        fluidRow(
+          column(
+            width = 6,
+            numericInput(ns("eff_slope"), label = "Slope", value = v_s),
+            uiOutput(ns("eff_slope_warning"))
+          ),
+          column(
+            width = 6,
+            numericInput(ns("eff_intercept"), label = "Intercept", value = v_i),
+            uiOutput(ns("eff_intercept_warning"))
+          )
+        )
+      )
+    ),
+    hr()
+  )
+}
+
+module_server_inv_simu_sigmoid_eff_endpoint <- function(input, output, session, index, all_rv) {
+  ns <- session$ns
+
+  # --- Weight ---
+  observeEvent(debounce(reactive(input$eff_weight), 300)(), {
+    all_rv$eff_endpoint_setting$eff_weight[index] <- isolate(input$eff_weight)
+  })
+
+  # --- Slope ---
+  observeEvent(debounce(reactive(input$eff_slope), 300)(), {
+    new_num <- isolate(as.numeric(input$eff_slope))
+    warning <- fun_numeric_check_warning(input_value = new_num)
+    if (warning$show_warning) {
+      showFeedbackWarning(inputId = ns("eff_slope"), text = warning$warning_message)
+      # keep last valid value: do not write NA
+    } else {
+      hideFeedback(ns("eff_slope"))
+      all_rv$eff_endpoint_setting$eff_slope[index] <- new_num
+    }
+  })
+
+  # --- Intercept ---
+  observeEvent(debounce(reactive(input$eff_intercept), 300)(), {
+    new_num <- isolate(as.numeric(input$eff_intercept))
+    warning <- fun_numeric_check_warning(input_value = new_num)
+    if (warning$show_warning) {
+      showFeedbackWarning(inputId = ns("eff_intercept"), text = warning$warning_message)
+      # keep last valid value: do not write NA
+    } else {
+      hideFeedback(ns("eff_intercept"))
+      all_rv$eff_endpoint_setting$eff_intercept[index] <- new_num
+    }
+  })
+
+  # writeback only on external data update, never on user typing
+  observeEvent(all_rv$triggers$update_ER_dataset, {
+    updateNumericInput(session, "eff_slope", value = all_rv$eff_endpoint_setting$eff_slope[index])
+    updateNumericInput(session, "eff_intercept", value = all_rv$eff_endpoint_setting$eff_intercept[index])
+  }, ignoreInit = TRUE)
+}

@@ -1,0 +1,81 @@
+TITE-PKBOIN-12 UPLOAD-MODE VERIFICATION DATASETS -- EXPECTED RESULTS
+========================================================================
+Fixed design (paper defaults):
+  pT=0.35 qE=0.25  u(SLOT)=(100,60,40,0)  CT=0.95 CE=0.90
+  lambda_e=0.276 lambda_d=0.419  u_b=70.5
+  r_P=6000 r_I/r_P=0.6 zeta1=4800 C_P=0.95
+  A_T=30 A_E=60  D=5 cohort_size=3  start_dose=1
+  accrual: suspension ON, threshold=0.5, base spacing rate=10 days
+
+Decision-time rule (must match tite_pkboin_decision_time):
+  base_next = time_current + cohort_size*rate + 1
+  min_n = min(floor(n_cur*0.5+1), n_cur)
+  t = max( sorted(tox_confirm)[min_n], sorted(eff_confirm)[min_n], base_next )
+  tox_confirm_i = min(enroll_i+A_T, enroll_i+tox_time_i)
+  eff_confirm_i = min(enroll_i+A_E, enroll_i+eff_time_i)
+
+Interim quasi-counts use AL imputation (paper 2.4):
+  pending tox contributes p*(1-w_t)/(1-p* w_t), w_t=follow/A_T; same for eff.
+  n1=(1-te)ee  n2=te*ee  n3=(1-te)(1-ee)  n4=te*(1-ee) summed over patients.
+
+------------------------------------------------------------------------
+DS1 clean_escalation_pk_gate
+------------------------------------------------------------------------
+  C1 d1 | t=    43 | pendT=0 pendE=1 ESSt=3 ESSe=2.65 | p*=0.0 q*=0.7547 | rhat=4000 pk_adeq=False dstar=0 dpm=None | A=[1, 2] scores={1: 0.6345, 2: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [stay]
+  C2 d2 | t=  74.0 | pendT=0 pendE=1 ESSt=3 ESSe=2.9 | p*=0.0 q*=0.6897 | rhat=6200 pk_adeq=True dstar=1 dpm=2 | A=[1, 2, 3] scores={1: 0.5009, 2: 0.5476, 3: 0.295} | toxElim=[] pkElim=[] | REC->2 actual=3 dev=True [stay]
+  C3 d3 | t= 105.0 | pendT=0 pendE=0 ESSt=3 ESSe=3 | p*=0.3333 q*=0.6667 | rhat=7200 pk_adeq=True dstar=2 dpm=2 | A=[2, 3, 4] scores={2: 0.5009, 3: 0.3395, 4: 0.295} | toxElim=[] pkElim=[] | REC->2 actual=3 dev=True [de-escalate]
+  C4 d3 | t= 136.0 | pendT=0 pendE=0 ESSt=6 ESSe=6 | p*=0.1667 q*=0.8333 | rhat=7175 pk_adeq=True dstar=2 dpm=2 | A=[2, 3, 4] scores={2: 0.5009, 3: 0.6599, 4: 0.295} | toxElim=[] pkElim=[] | REC->3 actual=None dev=False [stay]
+  FINAL: OBD=3  d_MTD=3  d_pk_min=2
+  final tried doses=[1, 2, 3] p_tilde=[0.0, 0.0, 0.167] r_tilde=[4000.0, 6200.0, 7175.0] eliminated=[False, False, False]
+
+------------------------------------------------------------------------
+DS2 interior_pk_prunes_lowest
+------------------------------------------------------------------------
+  C1 d1 | t=    36 | pendT=0 pendE=1 ESSt=3 ESSe=2.55 | p*=0.0 q*=0.7843 | rhat=5250 pk_adeq=True dstar=0 dpm=1 | A=[1, 2] scores={1: 0.6605, 2: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [stay]
+  C2 d2 | t=  69.0 | pendT=0 pendE=1 ESSt=3 ESSe=2.9 | p*=0.0 q*=0.3448 | rhat=4323 pk_adeq=False dstar=1 dpm=1 | A=[1, 2, 3] scores={1: 0.5009, 2: 0.2791, 3: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [de-escalate]
+  C3 d2 | t= 100.0 | pendT=0 pendE=0 ESSt=6 ESSe=6 | p*=0.1667 q*=0.3333 | rhat=4308 pk_adeq=False dstar=1 dpm=1 | A=[1, 2, 3] scores={1: 0.5009, 2: 0.1526, 3: 0.295} | toxElim=[1] pkElim=[1] | REC->3 actual=3 dev=False [escalate]
+  C4 d3 | t= 131.0 | pendT=0 pendE=0 ESSt=3 ESSe=3 | p*=0.0 q*=0.6667 | rhat=6950 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3, 4] scores={1: 0.5009, 2: 0.1526, 3: 0.5009, 4: 0.295} | toxElim=[1] pkElim=[1] | REC->3 actual=None dev=False [stay]
+  FINAL: OBD=None  d_MTD=2  d_pk_min=3
+  final tried doses=[1, 2, 3] p_tilde=[0.0, 0.111, 0.111] r_tilde=[4622.0, 4622.0, 6950.0] eliminated=[True, False, False]
+
+------------------------------------------------------------------------
+DS3 top_dose_pk_terminates
+------------------------------------------------------------------------
+  C1 d1 | t=    36 | pendT=0 pendE=1 ESSt=3 ESSe=2.55 | p*=0.0 q*=0.7843 | rhat=5250 pk_adeq=True dstar=0 dpm=1 | A=[1, 2] scores={1: 0.6605, 2: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [stay]
+  C2 d2 | t=  67.0 | pendT=0 pendE=1 ESSt=3 ESSe=2.867 | p*=0.0 q*=0.6977 | rhat=6250 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3] scores={1: 0.5009, 2: 0.5615, 3: 0.295} | toxElim=[] pkElim=[] | REC->2 actual=3 dev=True [stay]
+  C3 d3 | t=  98.0 | pendT=0 pendE=0 ESSt=3 ESSe=3 | p*=0.3333 q*=0.6667 | rhat=7050 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3, 4] scores={1: 0.5009, 2: 0.5009, 3: 0.3395, 4: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=4 dev=True [de-escalate]
+  C4 d4 | t= 129.0 | pendT=0 pendE=0 ESSt=3 ESSe=3 | p*=0.3333 q*=0.6667 | rhat=7650 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3, 4, 5] scores={1: 0.5009, 2: 0.5009, 3: 0.3395, 4: 0.3395, 5: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=5 dev=True [de-escalate]
+  C5 d5 | t= 160.0 | pendT=0 pendE=0 ESSt=3 ESSe=3 | p*=0.0 q*=0.3333 | rhat=4323 pk_adeq=False dstar=4 dpm=1 | A=[4, 5] scores={4: 0.3395, 5: 0.2691} | toxElim=[] pkElim=[] | REC->4 actual=5 dev=True [de-escalate]
+  C6 d5 | t= 191.0 | pendT=0 pendE=0 ESSt=6 ESSe=6 | p*=0.1667 q*=0.3333 | rhat=4308 pk_adeq=False dstar=4 dpm=1 | A=[4, 5] scores={4: 0.3395, 5: 0.1526} | toxElim=[1, 2, 3, 4, 5] pkElim=[1, 2, 3, 4, 5] | REC->None actual=None dev=False [stop: top-dose PK inefficacious (terminate)]
+  FINAL: OBD=None  d_MTD=3  d_pk_min=2
+  final tried doses=[1, 2, 3, 4, 5] p_tilde=[0.0, 0.0, 0.25, 0.25, 0.25] r_tilde=[5250.0, 5913.0, 5913.0, 5913.0, 5913.0] eliminated=[True, True, True, True, True]
+
+------------------------------------------------------------------------
+DS4 accrual_suspension
+------------------------------------------------------------------------
+  C1 d1 | t=    55 | pendT=0 pendE=1 ESSt=3 ESSe=2.9 | p*=0.3333 q*=0.6897 | rhat=6150 pk_adeq=True dstar=0 dpm=1 | A=[1, 2] scores={1: 0.3812, 2: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=1 dev=False [stay]
+  C2 d1 | t=  86.0 | pendT=0 pendE=0 ESSt=6 ESSe=6 | p*=0.1667 q*=0.6667 | rhat=6155 pk_adeq=True dstar=0 dpm=1 | A=[1, 2] scores={1: 0.4646, 2: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [stay]
+  C3 d2 | t= 117.0 | pendT=0 pendE=0 ESSt=3 ESSe=3 | p*=0.0 q*=0.6667 | rhat=7050 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3] scores={1: 0.4646, 2: 0.5009, 3: 0.295} | toxElim=[] pkElim=[] | REC->2 actual=None dev=False [stay]
+  FINAL: OBD=1  d_MTD=1  d_pk_min=1
+  final tried doses=[1, 2] p_tilde=[0.111, 0.111] r_tilde=[6155.0, 7050.0] eliminated=[False, False]
+
+------------------------------------------------------------------------
+DS5 tite_deescalation_pending_tox
+------------------------------------------------------------------------
+  C1 d1 | t=    47 | pendT=0 pendE=1 ESSt=3 ESSe=2.717 | p*=0.0 q*=0.7362 | rhat=6150 pk_adeq=True dstar=0 dpm=1 | A=[1, 2] scores={1: 0.6147, 2: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [stay]
+  C2 d2 | t=  78.0 | pendT=0 pendE=0 ESSt=3 ESSe=3 | p*=0.6667 q*=0.6667 | rhat=6550 pk_adeq=True dstar=1 dpm=1 | A=[1] scores={1: 0.5009} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [de-escalate]
+  C3 d2 | t= 109.0 | pendT=0 pendE=0 ESSt=6 ESSe=6 | p*=0.6667 q*=0.6667 | rhat=6552 pk_adeq=True dstar=1 dpm=1 | A=[1] scores={1: 0.5009} | toxElim=[] pkElim=[] | REC->1 actual=1 dev=False [de-escalate]
+  C4 d1 | t= 140.0 | pendT=0 pendE=0 ESSt=6 ESSe=6 | p*=0.0 q*=0.6667 | rhat=6135 pk_adeq=True dstar=0 dpm=1 | A=[1, 2] scores={1: 0.5954, 2: 0.1526} | toxElim=[] pkElim=[] | REC->1 actual=None dev=False [stay]
+  FINAL: OBD=1  d_MTD=2  d_pk_min=1
+  final tried doses=[1, 2] p_tilde=[0.0, 0.667] r_tilde=[6135.0, 6552.0] eliminated=[False, False]
+
+------------------------------------------------------------------------
+DS6 fullyobs_final_obd_equiv
+------------------------------------------------------------------------
+  C1 d1 | t=  32.0 | pendT=1 pendE=1 ESSt=2.933 ESSe=2.5 | p*=0.0 q*=0.8 | rhat=5050 pk_adeq=True dstar=0 dpm=1 | A=[1, 2] scores={1: 0.672, 2: 0.295} | toxElim=[] pkElim=[] | REC->1 actual=2 dev=True [stay]
+  C2 d2 | t= 138.0 | pendT=1 pendE=1 ESSt=2.933 ESSe=2.467 | p*=0.0 q*=0.8108 | rhat=6250 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3] scores={1: 0.5009, 2: 0.6793, 3: 0.295} | toxElim=[] pkElim=[] | REC->2 actual=3 dev=True [stay]
+  C3 d3 | t= 242.0 | pendT=1 pendE=0 ESSt=2.867 ESSe=3 | p*=0.3488 q*=1.0 | rhat=7250 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3, 4] scores={1: 0.5009, 2: 0.5009, 3: 0.5753, 4: 0.295} | toxElim=[] pkElim=[] | REC->3 actual=3 dev=False [stay]
+  C4 d3 | t= 348.0 | pendT=2 pendE=1 ESSt=5.8 ESSe=5.467 | p*=0.1724 q*=0.9146 | rhat=7200 pk_adeq=True dstar=1 dpm=1 | A=[1, 2, 3, 4] scores={1: 0.5009, 2: 0.5009, 3: 0.8041, 4: 0.295} | toxElim=[] pkElim=[] | REC->3 actual=None dev=False [stay]
+  FINAL: OBD=3  d_MTD=3  d_pk_min=2
+  final tried doses=[1, 2, 3] p_tilde=[0.0, 0.0, 0.167] r_tilde=[5050.0, 6250.0, 7200.0] eliminated=[False, False, False]
+
