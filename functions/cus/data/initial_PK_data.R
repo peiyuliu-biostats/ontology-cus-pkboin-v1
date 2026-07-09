@@ -117,12 +117,14 @@ initial_PK_data <-
                          "4" = eff_inter + eff_slope * log(Score_dt$PK),
                          "5" = exp(pmin(pmax(eff_inter + eff_slope * Score_dt$PK, -709), 709)))
           Yobs <- ER_data_list$ER_rawdt[[paste0("EFF", i)]]
-          # optional user response bounds: clip Yhat before the ECDF map. NA side = no clip.
+          # optional user response bounds -> truncated support (decision a): restrict the
+          # observed-Y ECDF baseline to [lb, ub] and clip Yhat into [lb, ub] so predictions
+          # beyond the support map to the truncated CDF's ends. NA side = no truncation.
           lb <- eff_endpoint_setting$eff_resp_lb[i]
           ub <- eff_endpoint_setting$eff_resp_ub[i]
           if (!is.null(lb) && !is.na(lb)) Yhat <- pmax(Yhat, lb)
           if (!is.null(ub) && !is.na(ub)) Yhat <- pmin(Yhat, ub)
-          prob_eff <- continuous_ecdf_map(Yobs, Yhat)
+          prob_eff <- continuous_ecdf_map(Yobs, Yhat, lb, ub)
         } else {                 # Simulate: user-typed intercept/slope + min-max mapping
           eff_inter <- eff_endpoint_setting$eff_intercept[i]
           eff_slope <- eff_endpoint_setting$eff_slope[i]
@@ -130,6 +132,14 @@ initial_PK_data <-
                          "3" = eff_inter + eff_slope * Score_dt$PK,        # linear
                          "4" = eff_inter + eff_slope * log(Score_dt$PK),   # log-linear
                          "5" = exp(pmin(pmax(eff_inter + eff_slope * Score_dt$PK, -709), 709)))  # exponential
+          # optional truncated support: clip predicted Y into [lb, ub] before the min-max
+          # map. NA side = no bound. this bounds the response to the user's plausible range,
+          # matching the upload-mode bounds behaviour. only the mapping input is affected;
+          # the CUS core is untouched.
+          lb <- eff_endpoint_setting$eff_resp_lb[i]
+          ub <- eff_endpoint_setting$eff_resp_ub[i]
+          if (!is.null(lb) && !is.na(lb)) Yhat <- pmax(Yhat, lb)
+          if (!is.null(ub) && !is.na(ub)) Yhat <- pmin(Yhat, ub)
           Yrng <- max(Yhat) - min(Yhat)
           # min-max map predicted Y to [0,1]; flat ER (range 0) -> 0.5
           prob_eff <- if(Yrng == 0) rep(0.5, length(Yhat)) else (Yhat - min(Yhat)) / Yrng
@@ -203,12 +213,13 @@ initial_PK_data <-
                          "4" = safe_inter + safe_slope * log(Score_dt$PK),
                          "5" = exp(pmin(pmax(safe_inter + safe_slope * Score_dt$PK, -709), 709)))
           Yobs <- ER_data_list$ER_rawdt[[paste0("SAFE", i)]]
-          # optional user response bounds: clip Yhat before the ECDF map. NA side = no clip.
+          # optional user response bounds -> truncated support (decision a): restrict the
+          # observed-Y ECDF baseline to [lb, ub] and clip Yhat into [lb, ub].
           lb <- safe_endpoint_setting$safe_resp_lb[i]
           ub <- safe_endpoint_setting$safe_resp_ub[i]
           if (!is.null(lb) && !is.na(lb)) Yhat <- pmax(Yhat, lb)
           if (!is.null(ub) && !is.na(ub)) Yhat <- pmin(Yhat, ub)
-          prob_safe <- continuous_ecdf_map(Yobs, Yhat)
+          prob_safe <- continuous_ecdf_map(Yobs, Yhat, lb, ub)
         } else {                 # Simulate: user-typed intercept/slope + min-max mapping
           safe_inter <- safe_endpoint_setting$safe_intercept[i]
           safe_slope <- safe_endpoint_setting$safe_slope[i]
@@ -216,6 +227,11 @@ initial_PK_data <-
                          "3" = safe_inter + safe_slope * Score_dt$PK,        # linear
                          "4" = safe_inter + safe_slope * log(Score_dt$PK),   # log-linear
                          "5" = exp(pmin(pmax(safe_inter + safe_slope * Score_dt$PK, -709), 709)))  # exponential
+          # optional truncated support: clip predicted Y into [lb, ub] before the min-max map
+          lb <- safe_endpoint_setting$safe_resp_lb[i]
+          ub <- safe_endpoint_setting$safe_resp_ub[i]
+          if (!is.null(lb) && !is.na(lb)) Yhat <- pmax(Yhat, lb)
+          if (!is.null(ub) && !is.na(ub)) Yhat <- pmin(Yhat, ub)
           Yrng <- max(Yhat) - min(Yhat)
           # min-max map predicted Y to [0,1]; flat ER (range 0) -> 0.5. direction (1-m) handled by utility below
           prob_safe <- if(Yrng == 0) rep(0.5, length(Yhat)) else (Yhat - min(Yhat)) / Yrng

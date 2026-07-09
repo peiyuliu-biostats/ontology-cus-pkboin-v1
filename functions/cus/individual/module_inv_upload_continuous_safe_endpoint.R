@@ -23,13 +23,24 @@ module_UI_inv_upload_continuous_safe_endpoint <- function(id, index, init = NULL
              )
       )
     ),
-    fluidRow(
-      column(width = 6,
-             numericInput(ns("safe_resp_lb"), label = "Response lower bound (optional)",
-                          value = v_lb, min = NA, max = NA, width = "100%")),
-      column(width = 6,
-             numericInput(ns("safe_resp_ub"), label = "Response upper bound (optional)",
-                          value = v_ub, min = NA, max = NA, width = "100%"))
+    # optional response bounds -> truncated support: observed-Y ECDF baseline restricted
+    # to [lower, upper] and Yhat clipped into [lower, upper]. aligned under the estimate
+    # columns (5/7 grid). leave empty for no truncation on that side.
+    tags$div(
+      fluidRow(
+        column(width = 5),
+        column(
+          width = 7,
+          fluidRow(
+            column(width = 6,
+                   numericInput(ns("safe_resp_lb"), label = "Response lower bound (optional)",
+                                value = v_lb, min = NA, max = NA, width = "100%")),
+            column(width = 6,
+                   numericInput(ns("safe_resp_ub"), label = "Response upper bound (optional)",
+                                value = v_ub, min = NA, max = NA, width = "100%"))
+          )
+        )
+      )
     ),
     hr()
   )

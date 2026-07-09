@@ -146,7 +146,7 @@ bootstrap_CUS_data <- function(all_rv, bootsize = 5000)
                            "5" = exp(pmin(pmax(ab[1] + ab[2] * PK_gen, -709), 709)))
             if (!is.null(lb) && !is.na(lb)) Yhat <- pmax(Yhat, lb)
             if (!is.null(ub) && !is.na(ub)) Yhat <- pmin(Yhat, ub)
-            pmin(pmax(continuous_ecdf_map(yk, Yhat), 1e-6), 1 - 1e-6)
+            pmin(pmax(continuous_ecdf_map(yk, Yhat, lb, ub), 1e-6), 1 - 1e-6)
           })  # length(PK_gen) * bootsize
         } 
         
@@ -233,7 +233,7 @@ bootstrap_CUS_data <- function(all_rv, bootsize = 5000)
                            "5" = exp(pmin(pmax(ab[1] + ab[2] * PK_gen, -709), 709)))
             if (!is.null(lb) && !is.na(lb)) Yhat <- pmax(Yhat, lb)
             if (!is.null(ub) && !is.na(ub)) Yhat <- pmin(Yhat, ub)
-            pmin(pmax(continuous_ecdf_map(yk, Yhat), 1e-6), 1 - 1e-6)
+            pmin(pmax(continuous_ecdf_map(yk, Yhat, lb, ub), 1e-6), 1 - 1e-6)
           })  # length(PK_gen) * bootsize
         }
         

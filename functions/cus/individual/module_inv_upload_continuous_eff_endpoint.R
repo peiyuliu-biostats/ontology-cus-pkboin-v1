@@ -25,15 +25,24 @@ module_UI_inv_upload_continuous_eff_endpoint <- function(id, index, init = NULL)
              )
       )
     ),
-    # optional response bounds: Yhat is clipped to [lower, upper] before the ECDF map.
-    # leave empty for no clipping on that side.
-    fluidRow(
-      column(width = 6,
-             numericInput(ns("eff_resp_lb"), label = "Response lower bound (optional)",
-                          value = v_lb, min = NA, max = NA, width = "100%")),
-      column(width = 6,
-             numericInput(ns("eff_resp_ub"), label = "Response upper bound (optional)",
-                          value = v_ub, min = NA, max = NA, width = "100%"))
+    # optional response bounds -> truncated support: observed-Y ECDF baseline is
+    # restricted to [lower, upper] and Yhat clipped into [lower, upper]. leave empty
+    # for no truncation on that side. aligned under the estimate columns (5/7 grid).
+    tags$div(
+      fluidRow(
+        column(width = 5),
+        column(
+          width = 7,
+          fluidRow(
+            column(width = 6,
+                   numericInput(ns("eff_resp_lb"), label = "Response lower bound (optional)",
+                                value = v_lb, min = NA, max = NA, width = "100%")),
+            column(width = 6,
+                   numericInput(ns("eff_resp_ub"), label = "Response upper bound (optional)",
+                                value = v_ub, min = NA, max = NA, width = "100%"))
+          )
+        )
+      )
     ),
     hr()
   )

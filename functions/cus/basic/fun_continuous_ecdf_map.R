@@ -1,10 +1,18 @@
 # maps predicted Y to [0,1] via a linear-interpolated empirical CDF of observed Y.
 # Yhat outside the observed range is clamped to the nearest boundary (0 or 1),
 # per the agreed upload-mode rule. used by both the main curve and the bootstrap.
-continuous_ecdf_map <- function(Y_obs, Yhat) {
+# optional lb/ub give truncated support (decision a): the observed Y used to build the
+# ECDF is restricted to [lb, ub], so the mapping reflects a truncated response
+# distribution rather than piling out-of-bound predictions at the untruncated edges.
+# NA/NULL side = no truncation on that side. only the mapping baseline is affected;
+# the CUS core is untouched.
+continuous_ecdf_map <- function(Y_obs, Yhat, lb = NA_real_, ub = NA_real_) {
   Y_obs <- Y_obs[is.finite(Y_obs)]
+  # truncated support: keep only observed Y within [lb, ub] before building the ECDF
+  if (!is.null(lb) && !is.na(lb)) Y_obs <- Y_obs[Y_obs >= lb]
+  if (!is.null(ub) && !is.na(ub)) Y_obs <- Y_obs[Y_obs <= ub]
   n <- length(Y_obs)
-  if (n == 0) return(rep(0.5, length(Yhat)))           # no data -> neutral
+  if (n == 0) return(rep(0.5, length(Yhat)))           # no data in support -> neutral
   ys <- sort(Y_obs)
   if (ys[1] == ys[n]) return(rep(0.5, length(Yhat)))   # degenerate (all equal) -> neutral
   h <- (seq_len(n) - 1) / (n - 1)                       # heights 0 .. 1

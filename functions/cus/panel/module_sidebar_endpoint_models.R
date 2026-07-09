@@ -10,23 +10,21 @@
 module_UI_sidebar_endpoint_models <- function(id) {
   ns <- NS(id)
   tagList(
+    # Q1: endpoint types (efficacy | safety)
     hr(style = "margin-top:8px; margin-bottom:8px;"),
-    h5("Endpoint Type & Regression"),
-    uiOutput(ns("eff_block")),
-    uiOutput(ns("safe_block"))
+    h5("Endpoint Types"),
+    uiOutput(ns("types_block")),
+    # Q2: regression models (efficacy | safety), shown per type actually used
+    hr(style = "margin-top:8px; margin-bottom:8px;"),
+    h5("Regression Models"),
+    uiOutput(ns("models_block"))
   )
 }
 
-# helper: builds the two-column UI for one group (efficacy or safety).
-# `prefix` is "eff" or "safe"; `num` is the endpoint count; `types`/`cont_m`/`bin_m`
-# are the current stored values used as initial selections.
-.build_group_models_ui <- function(ns, prefix, group_label, num, types, cont_m, bin_m) {
+# helper: builds ONLY the per-endpoint type radios for one group (efficacy or safety).
+.build_group_types_ui <- function(ns, prefix, group_label, num, types) {
   if (is.na(num) || num <= 0) return(NULL)
-  cont_choices <- list("Linear" = 3, "Log-linear" = 4, "Exponential" = 5)
-  bin_choices  <- list("Logistic" = 1, "Emax" = 2)
   upper <- toupper(prefix)
-
-  # left column: one type radio per endpoint
   type_rows <- lapply(seq_len(num), function(i) {
     sel <- if (length(types) >= i && !is.na(types[i])) types[i] else "bin"
     div(style = "margin-bottom:4px;",
@@ -35,43 +33,39 @@ module_UI_sidebar_endpoint_models <- function(id) {
                      choices = list("cont" = "cont", "bin" = "bin"),
                      selected = sel, inline = TRUE))
   })
-
-  any_cont <- any(types[seq_len(num)] == "cont", na.rm = TRUE)
-  any_bin  <- any(types[seq_len(num)] == "bin",  na.rm = TRUE)
-
   tagList(
     div(class = "custom-label", group_label),
-    fluidRow(
-      column(
-        width = 5,
-        tags$div(style = "font-size:12px; color:#888;", "endpoint types"),
-        type_rows
-      ),
-      column(
-        width = 7,
-        tags$div(style = "font-size:12px; color:#888;", "regression models"),
-        # continuous shared box: only when at least one continuous endpoint
-        conditionalPanel(
-          condition = paste0("output['", ns(paste0(prefix, "_has_cont")), "'] == true"),
-          radioButtons(ns(paste0(prefix, "_cont_model")),
-                       label = span("continuous ",
-                                    tags$span(`data-toggle` = "tooltip",
-                                              title = "Log = Log-linear regression",
-                                              style = "cursor:help; color:#be2bbb;", "(?)")),
-                       choices = cont_choices,
-                       selected = if (cont_m %in% c(3, 4, 5)) cont_m else 3, inline = TRUE)
-        ),
-        # binary shared box: only when at least one binary endpoint
-        conditionalPanel(
-          condition = paste0("output['", ns(paste0(prefix, "_has_bin")), "'] == true"),
-          radioButtons(ns(paste0(prefix, "_bin_model")),
-                       label = "binary",
-                       choices = bin_choices,
-                       selected = if (bin_m %in% c(1, 2)) bin_m else 1, inline = TRUE)
-        )
-      )
+    type_rows
+  )
+}
+
+# helper: builds ONLY the shared per-type regression radios for one group.
+# continuous box shows only if the group has any continuous endpoint; binary box
+# only if any binary endpoint (driven by the *_has_cont / *_has_bin flags).
+.build_group_models_ui <- function(ns, prefix, group_label, num, cont_m, bin_m) {
+  if (is.na(num) || num <= 0) return(NULL)
+  cont_choices <- list("Linear" = 3, "Log-linear" = 4, "Exponential" = 5)
+  bin_choices  <- list("Logistic" = 1, "Emax" = 2)
+  tagList(
+    div(class = "custom-label", group_label),
+    conditionalPanel(
+      condition = paste0("output['", ns(paste0(prefix, "_has_cont")), "'] == true"),
+      radioButtons(ns(paste0(prefix, "_cont_model")),
+                   label = span("continuous ",
+                                tags$span(`data-toggle` = "tooltip",
+                                          title = "Log = Log-linear regression",
+                                          style = "cursor:help; color:#be2bbb;", "(?)")),
+                   choices = cont_choices,
+                   selected = if (cont_m %in% c(3, 4, 5)) cont_m else 3, inline = TRUE)
     ),
-    tags$script(HTML(sprintf("$(function(){ $('#%s [data-toggle=\"tooltip\"]').tooltip(); });", ns(prefix)))) 
+    conditionalPanel(
+      condition = paste0("output['", ns(paste0(prefix, "_has_bin")), "'] == true"),
+      radioButtons(ns(paste0(prefix, "_bin_model")),
+                   label = "binary",
+                   choices = bin_choices,
+                   selected = if (bin_m %in% c(1, 2)) bin_m else 1, inline = TRUE)
+    ),
+    tags$script(HTML(sprintf("$(function(){ $('#%s [data-toggle=\"tooltip\"]').tooltip(); });", ns(prefix))))
   )
 }
 
@@ -79,21 +73,34 @@ module_UI_sidebar_endpoint_models <- function(id) {
 module_server_sidebar_endpoint_models <- function(input, output, session, all_rv) {
   ns <- session$ns
 
-  # render efficacy two-column block, rebuilding when the count changes
-  output$eff_block <- renderUI({
-    num <- all_rv$endpoint_num_setting$eff_num
-    .build_group_models_ui(ns, "eff", "Efficacy", num,
-                           isolate(all_rv$overall_setting$eff_type_vec),
-                           isolate(all_rv$overall_setting$eff_cont_model),
-                           isolate(all_rv$overall_setting$eff_bin_model))
+  # Q1: types section, efficacy column | safety column. rebuild when counts change.
+  output$types_block <- renderUI({
+    eff_num  <- all_rv$endpoint_num_setting$eff_num
+    safe_num <- all_rv$endpoint_num_setting$safe_num
+    fluidRow(
+      column(width = 6,
+             .build_group_types_ui(ns, "eff", "Efficacy", eff_num,
+                                   isolate(all_rv$overall_setting$eff_type_vec))),
+      column(width = 6,
+             .build_group_types_ui(ns, "safe", "Safety", safe_num,
+                                   isolate(all_rv$overall_setting$safe_type_vec)))
+    )
   })
 
-  output$safe_block <- renderUI({
-    num <- all_rv$endpoint_num_setting$safe_num
-    .build_group_models_ui(ns, "safe", "Safety", num,
-                           isolate(all_rv$overall_setting$safe_type_vec),
-                           isolate(all_rv$overall_setting$safe_cont_model),
-                           isolate(all_rv$overall_setting$safe_bin_model))
+  # Q2: regression section, efficacy column | safety column. rebuild when counts change.
+  output$models_block <- renderUI({
+    eff_num  <- all_rv$endpoint_num_setting$eff_num
+    safe_num <- all_rv$endpoint_num_setting$safe_num
+    fluidRow(
+      column(width = 6,
+             .build_group_models_ui(ns, "eff", "Efficacy", eff_num,
+                                    isolate(all_rv$overall_setting$eff_cont_model),
+                                    isolate(all_rv$overall_setting$eff_bin_model))),
+      column(width = 6,
+             .build_group_models_ui(ns, "safe", "Safety", safe_num,
+                                    isolate(all_rv$overall_setting$safe_cont_model),
+                                    isolate(all_rv$overall_setting$safe_bin_model)))
+    )
   })
 
   # flags that drive the conditionalPanels (which shared regression boxes to show)
@@ -135,84 +142,94 @@ module_server_sidebar_endpoint_models <- function(input, output, session, all_rv
 module_UI_sidebar_endpoint_models_upload <- function(id) {
   ns <- NS(id)
   tagList(
+    # Q1: endpoint types (detected, read-only), efficacy | safety
     hr(style = "margin-top:8px; margin-bottom:8px;"),
-    h5("Endpoint Type & Regression"),
+    h5("Endpoint Types"),
     div(style = "font-size:12px; color:#888;", "types are detected from the uploaded data"),
-    uiOutput(ns("eff_block")),
-    uiOutput(ns("safe_block"))
+    uiOutput(ns("types_block")),
+    # Q2: regression models (efficacy | safety), shown per type actually used
+    hr(style = "margin-top:8px; margin-bottom:8px;"),
+    h5("Regression Models"),
+    uiOutput(ns("models_block"))
   )
 }
 
-# builds the read-only-type + selectable-regression UI for one uploaded group
-.build_group_models_ui_upload <- function(ns, prefix, group_label, num, types, cont_m, bin_m) {
+# helper: builds ONLY the detected read-only type rows for one uploaded group.
+.build_group_types_ui_upload <- function(ns, prefix, group_label, num, types) {
   if (is.na(num) || num <= 0) return(NULL)
-  cont_choices <- list("Linear" = 3, "Log-linear" = 4, "Exponential" = 5)
-  bin_choices  <- list("Logistic" = 1, "Emax" = 2)
   upper <- toupper(prefix)
-
-  # left column: detected type per endpoint (read-only text)
   type_rows <- lapply(seq_len(num), function(i) {
     tp <- if (length(types) >= i && !is.na(types[i]) && types[i] == "cont") "continuous" else "binary"
     div(style = "margin-bottom:4px; font-size:13px;",
         tags$b(paste0(upper, i)), tags$span(style = "color:#555;", paste0(": ", tp)))
   })
-
-  any_cont <- any(types[seq_len(num)] == "cont", na.rm = TRUE)
-  any_bin  <- any(types[seq_len(num)] == "bin",  na.rm = TRUE)
-
   tagList(
     div(class = "custom-label", group_label),
-    fluidRow(
-      column(
-        width = 5,
-        tags$div(style = "font-size:12px; color:#888;", "endpoint types (detected)"),
-        type_rows
-      ),
-      column(
-        width = 7,
-        tags$div(style = "font-size:12px; color:#888;", "regression models"),
-        conditionalPanel(
-          condition = paste0("output['", ns(paste0(prefix, "_has_cont")), "'] == true"),
-          radioButtons(ns(paste0(prefix, "_cont_model")),
-                       label = span("continuous ",
-                                    tags$span(`data-toggle` = "tooltip",
-                                              title = "Log = Log-linear regression",
-                                              style = "cursor:help; color:#be2bbb;", "(?)")),
-                       choices = cont_choices,
-                       selected = if (cont_m %in% c(3, 4, 5)) cont_m else 3, inline = TRUE)
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns(paste0(prefix, "_has_bin")), "'] == true"),
-          radioButtons(ns(paste0(prefix, "_bin_model")),
-                       label = "binary",
-                       choices = bin_choices,
-                       selected = if (bin_m %in% c(1, 2)) bin_m else 1, inline = TRUE)
-        )
-      )
+    type_rows
+  )
+}
+
+# helper: builds ONLY the shared per-type regression radios for one uploaded group.
+.build_group_models_ui_upload <- function(ns, prefix, group_label, num, cont_m, bin_m) {
+  if (is.na(num) || num <= 0) return(NULL)
+  cont_choices <- list("Linear" = 3, "Log-linear" = 4, "Exponential" = 5)
+  bin_choices  <- list("Logistic" = 1, "Emax" = 2)
+  tagList(
+    div(class = "custom-label", group_label),
+    conditionalPanel(
+      condition = paste0("output['", ns(paste0(prefix, "_has_cont")), "'] == true"),
+      radioButtons(ns(paste0(prefix, "_cont_model")),
+                   label = span("continuous ",
+                                tags$span(`data-toggle` = "tooltip",
+                                          title = "Log = Log-linear regression",
+                                          style = "cursor:help; color:#be2bbb;", "(?)")),
+                   choices = cont_choices,
+                   selected = if (cont_m %in% c(3, 4, 5)) cont_m else 3, inline = TRUE)
     ),
-    tags$script(HTML(sprintf("$(function(){ $('#%s [data-toggle=\"tooltip\"]').tooltip(); });", ns(prefix)))) 
+    conditionalPanel(
+      condition = paste0("output['", ns(paste0(prefix, "_has_bin")), "'] == true"),
+      radioButtons(ns(paste0(prefix, "_bin_model")),
+                   label = "binary",
+                   choices = bin_choices,
+                   selected = if (bin_m %in% c(1, 2)) bin_m else 1, inline = TRUE)
+    ),
+    tags$script(HTML(sprintf("$(function(){ $('#%s [data-toggle=\"tooltip\"]').tooltip(); });", ns(prefix))))
   )
 }
 
 module_server_sidebar_endpoint_models_upload <- function(input, output, session, all_rv) {
   ns <- session$ns
 
-  output$eff_block <- renderUI({
-    all_rv$triggers$update_ER_dataset   # rebuild when a new dataset is uploaded
-    num <- all_rv$endpoint_num_setting$eff_num
-    .build_group_models_ui_upload(ns, "eff", "Efficacy", num,
-                                  isolate(all_rv$overall_setting$eff_type_vec),
-                                  isolate(all_rv$overall_setting$eff_cont_model),
-                                  isolate(all_rv$overall_setting$eff_bin_model))
+  # Q1: detected types, efficacy column | safety column. rebuild on new upload.
+  output$types_block <- renderUI({
+    all_rv$triggers$update_ER_dataset
+    eff_num  <- all_rv$endpoint_num_setting$eff_num
+    safe_num <- all_rv$endpoint_num_setting$safe_num
+    fluidRow(
+      column(width = 6,
+             .build_group_types_ui_upload(ns, "eff", "Efficacy", eff_num,
+                                          isolate(all_rv$overall_setting$eff_type_vec))),
+      column(width = 6,
+             .build_group_types_ui_upload(ns, "safe", "Safety", safe_num,
+                                          isolate(all_rv$overall_setting$safe_type_vec)))
+    )
   })
 
-  output$safe_block <- renderUI({
+  # Q2: regression models, efficacy column | safety column. rebuild on new upload.
+  output$models_block <- renderUI({
     all_rv$triggers$update_ER_dataset
-    num <- all_rv$endpoint_num_setting$safe_num
-    .build_group_models_ui_upload(ns, "safe", "Safety", num,
-                                  isolate(all_rv$overall_setting$safe_type_vec),
-                                  isolate(all_rv$overall_setting$safe_cont_model),
-                                  isolate(all_rv$overall_setting$safe_bin_model))
+    eff_num  <- all_rv$endpoint_num_setting$eff_num
+    safe_num <- all_rv$endpoint_num_setting$safe_num
+    fluidRow(
+      column(width = 6,
+             .build_group_models_ui_upload(ns, "eff", "Efficacy", eff_num,
+                                           isolate(all_rv$overall_setting$eff_cont_model),
+                                           isolate(all_rv$overall_setting$eff_bin_model))),
+      column(width = 6,
+             .build_group_models_ui_upload(ns, "safe", "Safety", safe_num,
+                                           isolate(all_rv$overall_setting$safe_cont_model),
+                                           isolate(all_rv$overall_setting$safe_bin_model)))
+    )
   })
 
   output$eff_has_cont  <- reactive(any(all_rv$overall_setting$eff_type_vec[seq_len(coalesce(all_rv$endpoint_num_setting$eff_num, 0))] == "cont", na.rm = TRUE))

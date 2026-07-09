@@ -53,6 +53,31 @@ module_server_panel_utility <- function(input, output, session, all_rv)
     all_rv$overall_setting$utility_type = input$utility_type
   })
   
+  # any continuous endpoint present (efficacy or safety)? continuous endpoints require
+  # a separate utility per endpoint, so we force "Yes" and lock the two radios.
+  has_any_cont <- reactive({
+    eff_num  <- coalesce(all_rv$endpoint_num_setting$eff_num, 0)
+    safe_num <- coalesce(all_rv$endpoint_num_setting$safe_num, 0)
+    ec <- eff_num  > 0 && any(all_rv$overall_setting$eff_type_vec[seq_len(eff_num)]   == "cont", na.rm = TRUE)
+    sc <- safe_num > 0 && any(all_rv$overall_setting$safe_type_vec[seq_len(safe_num)] == "cont", na.rm = TRUE)
+    isTRUE(ec) || isTRUE(sc)
+  })
+
+  # when continuous endpoints exist: set both separate-utility selections to Yes (=1)
+  # and disable the inputs so the choice can't be changed. when none exist: re-enable.
+  observe({
+    force_sep <- has_any_cont()
+    if (force_sep) {
+      updateRadioButtons(session, "individual_Sshape_utility",   selected = 1)
+      updateRadioButtons(session, "individual_stepwise_utility", selected = 1)
+      shinyjs::disable("individual_Sshape_utility")
+      shinyjs::disable("individual_stepwise_utility")
+    } else {
+      shinyjs::enable("individual_Sshape_utility")
+      shinyjs::enable("individual_stepwise_utility")
+    }
+  })
+  
   observeEvent(input$individual_Sshape_utility, {
     all_rv$overall_setting$individual_Sshape_utility <- input$individual_Sshape_utility
     all_rv$triggers$update_utility_Sshape_indiv_trigger <- Sys.time()

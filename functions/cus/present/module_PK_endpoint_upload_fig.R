@@ -249,12 +249,17 @@ module_server_PK_endpoint_upload_fig <- function(input, output, session, all_rv)
     }
 
     # ---- continuous endpoints: m(PK) curve = ECDF(predicted Y) mapped to [0,1] ----
-    cont_curve <- function(model, a, b, pk_grid, yobs) {
+    # bounds give truncated support (decision a), identical to initial_PK_data.R so the
+    # plotted fitted curve matches the CUS: observed-Y ECDF restricted to [lb, ub] and
+    # Yhat clipped into [lb, ub]. NA side = no truncation.
+    cont_curve <- function(model, a, b, pk_grid, yobs, lb = NA_real_, ub = NA_real_) {
       Yhat <- switch(as.character(model),
                      "3" = a + b * pk_grid,
                      "4" = a + b * log(pk_grid),
                      "5" = exp(pmin(pmax(a + b * pk_grid, -709), 709)))
-      continuous_ecdf_map(yobs, Yhat)
+      if (!is.null(lb) && !is.na(lb)) Yhat <- pmax(Yhat, lb)
+      if (!is.null(ub) && !is.na(ub)) Yhat <- pmin(Yhat, ub)
+      continuous_ecdf_map(yobs, Yhat, lb, ub)
     }
     pk_grid <- seq(min(rawdt$PK, na.rm = TRUE), max(rawdt$PK, na.rm = TRUE), length.out = 200)
     curve_df <- data.frame()
@@ -267,7 +272,8 @@ module_server_PK_endpoint_upload_fig <- function(input, output, session, all_rv)
                      "3" = c(s$eff_lin_a[i], s$eff_lin_b[i]),
                      "4" = c(s$eff_log_a[i], s$eff_log_b[i]),
                      "5" = c(s$eff_exp_a[i], s$eff_exp_b[i]))
-        m <- cont_curve(m_i, ab[1], ab[2], pk_grid, rawdt[[paste0("EFF", i)]])
+        m <- cont_curve(m_i, ab[1], ab[2], pk_grid, rawdt[[paste0("EFF", i)]],
+                        s$eff_resp_lb[i], s$eff_resp_ub[i])
         curve_df <- rbind(curve_df, data.frame(PK = pk_grid, m = m,
                                                Endpoint = paste0("EFF", i), col = "eff"))
       }
@@ -281,7 +287,8 @@ module_server_PK_endpoint_upload_fig <- function(input, output, session, all_rv)
                      "3" = c(s$safe_lin_a[i], s$safe_lin_b[i]),
                      "4" = c(s$safe_log_a[i], s$safe_log_b[i]),
                      "5" = c(s$safe_exp_a[i], s$safe_exp_b[i]))
-        m <- cont_curve(m_i, ab[1], ab[2], pk_grid, rawdt[[paste0("SAFE", i)]])
+        m <- cont_curve(m_i, ab[1], ab[2], pk_grid, rawdt[[paste0("SAFE", i)]],
+                        s$safe_resp_lb[i], s$safe_resp_ub[i])
         curve_df <- rbind(curve_df, data.frame(PK = pk_grid, m = m,
                                                Endpoint = paste0("SAFE", i), col = "safe"))
       }

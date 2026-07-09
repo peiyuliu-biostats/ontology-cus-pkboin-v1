@@ -62,9 +62,11 @@ module_server_efficacy_endpoint_setting <- function(input, output, session, all_
   # so an inserted / re-inserted block shows the current value, not a hard-coded default
   eff_init <- function(i) {
     s <- all_rv$eff_endpoint_setting
+    tv <- all_rv$overall_setting$eff_type_vec
+    is_cont <- !is.null(tv) && length(tv) >= i && !is.na(tv[i]) && tv[i] == "cont"
     list(weight = s$eff_weight[i], slope = s$eff_slope[i], intercept = s$eff_intercept[i],
          baseline = s$eff_baseline[i], Emax = s$eff_Emax[i], EC50 = s$eff_EC50[i], hill = s$eff_hill[i],
-         resp_lb = s$eff_resp_lb[i], resp_ub = s$eff_resp_ub[i])
+         resp_lb = s$eff_resp_lb[i], resp_ub = s$eff_resp_ub[i], is_cont = is_cont)
   }
 
   # inserts one endpoint block at index i; starts its server only the first time.

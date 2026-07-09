@@ -60,9 +60,11 @@ module_server_safety_endpoint_setting <- function(input, output, session, all_rv
   # so an inserted / re-inserted block shows the current value, not a hard-coded default
   safe_init <- function(i) {
     s <- all_rv$safe_endpoint_setting
+    tv <- all_rv$overall_setting$safe_type_vec
+    is_cont <- !is.null(tv) && length(tv) >= i && !is.na(tv[i]) && tv[i] == "cont"
     list(weight = s$safe_weight[i], slope = s$safe_slope[i], intercept = s$safe_intercept[i],
          baseline = s$safe_baseline[i], Emax = s$safe_Emax[i], EC50 = s$safe_EC50[i], hill = s$safe_hill[i],
-         resp_lb = s$safe_resp_lb[i], resp_ub = s$safe_resp_ub[i])
+         resp_lb = s$safe_resp_lb[i], resp_ub = s$safe_resp_ub[i], is_cont = is_cont)
   }
 
   # inserts one endpoint block at index i; starts its server only the first time.
