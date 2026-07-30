@@ -10,7 +10,7 @@ An interactive R Shiny platform for **optimal biological dose (OBD)** selection 
 
 ## Methods
 
-The app is organized into three independent dashboards, each self-contained with isolated state.
+The app is organized into three independent dashboards, each self-contained with isolated state. Please turn to live app methods siderbar to view all methods formulas and details.
 
 ### 1. PK-BOIN12 Suite
 A family of model-assisted, adaptive Phase I/II interval designs that select the OBD by jointly weighing toxicity and efficacy through a utility / rank-based desirability score (RDS). Three nested methods are available from a single Method selector:
