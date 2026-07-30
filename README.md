@@ -1,6 +1,6 @@
 # Oncology Early-Phase Adaptive Dose Optimization
 
-[![View ShinyApp](https://img.shields.io/badge/View-ShinyApp-blue?style=for-the-badge&logo=R)](https://peiyuliu.shinyapps.io/ontology-cus-pkboin-v1/)
+[![View ShinyApp](https://img.shields.io/badge/View-ShinyApp-blue?style=for-the-badge&logo=R)](https://peiyuliu.shinyapps.io/oncology-cus-pkboin-v1/)
 
 **Live demo:** https://peiyuliu.shinyapps.io/ontology-cus-pkboin-v1/
 
