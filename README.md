@@ -2,7 +2,7 @@
 
 [![View ShinyApp](https://img.shields.io/badge/View-ShinyApp-blue?style=for-the-badge&logo=R)](https://peiyuliu.shinyapps.io/oncology-cus-pkboin-v1/)
 
-**Live demo:** https://peiyuliu.shinyapps.io/ontology-cus-pkboin-v1/
+**Live demo:** https://peiyuliu.shinyapps.io/oncology-pkboin-ERcus/
 
 An interactive R Shiny platform for **optimal biological dose (OBD)** selection in early-phase oncology trials. It brings three complementary methodologies under one interface, reflecting the shift — advanced by the FDA's **Project Optimus** — from finding the maximum tolerated dose (MTD) toward identifying the dose that best balances efficacy and toxicity.
 
